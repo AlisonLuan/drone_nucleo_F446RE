@@ -47,10 +47,10 @@ UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 
-uint32_t PWM_D9 = 0;
-uint32_t PWM_D6 = 0;
-uint32_t PWM_D5 = 0;
-uint32_t PWM_D3 = 0;
+volatile uint32_t PWM_D9 = 0;
+volatile uint32_t PWM_D6 = 0;
+volatile uint32_t PWM_D5 = 0;
+volatile uint32_t PWM_D3 = 0;
 
 /* USER CODE END PV */
 
@@ -109,8 +109,6 @@ int main(void)
   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
-
-  UpdatePWM();
 
   /* USER CODE END 2 */
 
