@@ -47,6 +47,11 @@ UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 
+uint32_t PWM_D9 = 0;
+uint32_t PWM_D6 = 0;
+uint32_t PWM_D5 = 0;
+uint32_t PWM_D3 = 0;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -56,6 +61,8 @@ static void MX_USART2_UART_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
+
+void UpdatePWM(void);
 
 /* USER CODE END PFP */
 
@@ -98,6 +105,13 @@ int main(void)
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
 
+  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
+  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
+  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
+  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
+
+  UpdatePWM();
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -107,6 +121,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+    UpdatePWM();
   }
   /* USER CODE END 3 */
 }
@@ -337,6 +352,14 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+void UpdatePWM(void)
+{
+  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, PWM_D9);
+  __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, PWM_D6);
+  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, PWM_D5);
+  __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, PWM_D3);
+}
 
 /* USER CODE END 4 */
 
