@@ -47,11 +47,15 @@ TIM_HandleTypeDef htim3;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-
 volatile uint32_t PWM_D9 = 0;
 volatile uint32_t PWM_D6 = 0;
 volatile uint32_t PWM_D5 = 0;
 volatile uint32_t PWM_D3 = 0;
+
+volatile uint32_t PWM_D9_Target = 0;
+volatile uint32_t PWM_D6_Target = 0;
+volatile uint32_t PWM_D5_Target = 0;
+volatile uint32_t PWM_D3_Target = 0;
 
 /* USER CODE END PV */
 
@@ -361,14 +365,39 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
+#define PWM_MAX_STEP 500  // passo máximo permitido por ciclo
+#define Kp 0.2f            // ganho proporcional (ajuste conforme necessário)
+
+void SoftStartPWM(uint32_t *current, uint32_t target)
+{
+  int32_t error = (int32_t)target - (int32_t)(*current);
+  int32_t step = (int32_t)(Kp * error);
+
+  // saturação do passo
+  if (step > PWM_MAX_STEP) step = PWM_MAX_STEP;
+  else if (step < -PWM_MAX_STEP) step = -PWM_MAX_STEP;
+
+  *current += step;
+
+  // proteção contra overshoot (caso o passo cause ultrapassagem)
+  if ((step > 0 && *current > target) || (step < 0 && *current < target)) {
+    *current = target;
+  }
+}
+
+
 void UpdatePWM(void)
 {
+  SoftStartPWM((uint32_t*)&PWM_D9, PWM_D9_Target);
+  SoftStartPWM((uint32_t*)&PWM_D6, PWM_D6_Target);
+  SoftStartPWM((uint32_t*)&PWM_D5, PWM_D5_Target);
+  SoftStartPWM((uint32_t*)&PWM_D3, PWM_D3_Target);
+
   __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, PWM_D9);
   __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, PWM_D6);
   __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, PWM_D5);
   __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, PWM_D3);
 }
-
 /* USER CODE END 4 */
 
 /**
