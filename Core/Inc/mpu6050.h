@@ -12,26 +12,26 @@ extern "C" {
  * @brief Raw sensor data structure
  */
 typedef struct {
-        int16_t accel_x;
-        int16_t accel_y;
-        int16_t accel_z;
-        int16_t gyro_x;
-        int16_t gyro_y;
-        int16_t gyro_z;
-        int16_t temp;
+	int16_t accel_x;
+	int16_t accel_y;
+	int16_t accel_z;
+	int16_t gyro_x;
+	int16_t gyro_y;
+	int16_t gyro_z;
+	int16_t temp;
 } MPU6050_Data_t;
 
 /**
  * @brief Physical units for sensor data
  */
 typedef struct {
-        float accel_x; /* m/s^2 */
-        float accel_y; /* m/s^2 */
-        float accel_z; /* m/s^2 */
-        float gyro_x;  /* deg/s */
-        float gyro_y;  /* deg/s */
-        float gyro_z;  /* deg/s */
-        float temp;    /* Celsius */
+	float accel_x; /* m/s^2 */
+	float accel_y; /* m/s^2 */
+	float accel_z; /* m/s^2 */
+	float gyro_x;  /* deg/s */
+	float gyro_y;  /* deg/s */
+	float gyro_z;  /* deg/s */
+	float temp;    /* Celsius */
 } MPU6050_Physical_t;
 /* USER CODE END ET */
 
