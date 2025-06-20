@@ -22,6 +22,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <string.h>
+#include <math.h>
 #include "mpu6050.h"
 
 /* USER CODE END Includes */
@@ -34,6 +35,10 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define IMU_WINDOW_SIZE 10
+#define MIN_PWM        1000
+#define MAX_PWM        2000
+#define PID_KP         1.0f
+#define BASE_THROTTLE  1200.0f
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -68,6 +73,12 @@ static MPU6050_Physical_t imu_sum;
 static uint8_t imu_index = 0;
 static uint8_t imu_count = 0;
 
+volatile uint8_t control_enabled = 0;
+float target_pitch = 0.0f;
+float target_roll  = 0.0f;
+float target_yaw   = 0.0f;
+float throttle_base = BASE_THROTTLE;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -82,6 +93,7 @@ static void MX_I2C1_Init(void);
 void UpdatePWM(void);
 void Debug_Send(const char *msg);
 void IMU_UpdateAverage(const MPU6050_Physical_t *sample);
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
 
 /* USER CODE END PFP */
 
@@ -156,7 +168,35 @@ int main(void)
 
 		MPU6050_ReadAll(&hi2c1, &imu_data);
 		MPU6050_ConvertToPhysical(&imu_data, &imu_phys);
-		IMU_UpdateAverage(&imu_phys);
+                IMU_UpdateAverage(&imu_phys);
+
+                float pitch = atanf(imu_avg.accel_y /
+                                   sqrtf(imu_avg.accel_x * imu_avg.accel_x +
+                                         imu_avg.accel_z * imu_avg.accel_z)) * 180.0f / M_PI;
+                float roll  = atanf(-imu_avg.accel_x / imu_avg.accel_z) * 180.0f / M_PI;
+
+                float error_pitch = target_pitch - pitch;
+                float error_roll  = target_roll - roll;
+
+                float output_pitch = PID_KP * error_pitch;
+                float output_roll  = PID_KP * error_roll;
+
+                float throttle = control_enabled ? throttle_base : 0.0f;
+
+                float m1 = throttle + output_pitch + output_roll;
+                float m2 = throttle + output_pitch - output_roll;
+                float m3 = throttle - output_pitch + output_roll;
+                float m4 = throttle - output_pitch - output_roll;
+
+                if (m1 > MAX_PWM) m1 = MAX_PWM; else if (m1 < MIN_PWM) m1 = MIN_PWM;
+                if (m2 > MAX_PWM) m2 = MAX_PWM; else if (m2 < MIN_PWM) m2 = MIN_PWM;
+                if (m3 > MAX_PWM) m3 = MAX_PWM; else if (m3 < MIN_PWM) m3 = MIN_PWM;
+                if (m4 > MAX_PWM) m4 = MAX_PWM; else if (m4 < MIN_PWM) m4 = MIN_PWM;
+
+                PWM_D9_Target = (uint32_t)m1;
+                PWM_D6_Target = (uint32_t)m2;
+                PWM_D5_Target = (uint32_t)m3;
+                PWM_D3_Target = (uint32_t)m4;
 
 		UpdatePWM(); // This runs as fast as possible
 	}
@@ -494,15 +534,27 @@ void SoftStartPWM(uint32_t *current, uint32_t target)
 
 void UpdatePWM(void)
 {
-	SoftStartPWM((uint32_t*)&PWM_D9, PWM_D9_Target);
-	SoftStartPWM((uint32_t*)&PWM_D6, PWM_D6_Target);
-	SoftStartPWM((uint32_t*)&PWM_D5, PWM_D5_Target);
-	SoftStartPWM((uint32_t*)&PWM_D3, PWM_D3_Target);
+        SoftStartPWM((uint32_t*)&PWM_D9, PWM_D9_Target);
+        SoftStartPWM((uint32_t*)&PWM_D6, PWM_D6_Target);
+        SoftStartPWM((uint32_t*)&PWM_D5, PWM_D5_Target);
+        SoftStartPWM((uint32_t*)&PWM_D3, PWM_D3_Target);
 
 	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, PWM_D9);
 	__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, PWM_D6);
 	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, PWM_D5);
-	__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, PWM_D3);
+        __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, PWM_D3);
+}
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+        if (GPIO_Pin == B1_Pin)
+        {
+                control_enabled = !control_enabled;
+                if (control_enabled)
+                        Debug_Send("Control Enabled\r\n");
+                else
+                        Debug_Send("Control Disabled\r\n");
+        }
 }
 /* USER CODE END 4 */
 
