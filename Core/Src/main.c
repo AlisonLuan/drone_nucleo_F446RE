@@ -33,7 +33,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define IMU_WINDOW_SIZE 10
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -61,6 +61,12 @@ volatile uint32_t PWM_D5_Target = 0;
 volatile uint32_t PWM_D3_Target = 0;
 
 MPU6050_Data_t imu_data;
+MPU6050_Physical_t imu_phys;
+MPU6050_Physical_t imu_avg;
+static MPU6050_Physical_t imu_window[IMU_WINDOW_SIZE];
+static MPU6050_Physical_t imu_sum;
+static uint8_t imu_index = 0;
+static uint8_t imu_count = 0;
 
 /* USER CODE END PV */
 
@@ -75,6 +81,7 @@ static void MX_I2C1_Init(void);
 
 void UpdatePWM(void);
 void Debug_Send(const char *msg);
+void IMU_UpdateAverage(const MPU6050_Physical_t *sample);
 
 /* USER CODE END PFP */
 
@@ -149,7 +156,9 @@ int main(void)
 			lastBlink = now;
 		}
 
-		MPU6050_ReadAll(&hi2c1, &imu_data);
+               MPU6050_ReadAll(&hi2c1, &imu_data);
+               MPU6050_ConvertToPhysical(&imu_data, &imu_phys);
+               IMU_UpdateAverage(&imu_phys);
 
 		UpdatePWM(); // This runs as fast as possible
 	}
@@ -416,6 +425,53 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+void IMU_UpdateAverage(const MPU6050_Physical_t *sample)
+{
+        if (imu_count < IMU_WINDOW_SIZE)
+        {
+                imu_window[imu_index] = *sample;
+                imu_sum.accel_x += sample->accel_x;
+                imu_sum.accel_y += sample->accel_y;
+                imu_sum.accel_z += sample->accel_z;
+                imu_sum.gyro_x  += sample->gyro_x;
+                imu_sum.gyro_y  += sample->gyro_y;
+                imu_sum.gyro_z  += sample->gyro_z;
+                imu_sum.temp    += sample->temp;
+                imu_count++;
+        }
+        else
+        {
+                imu_sum.accel_x -= imu_window[imu_index].accel_x;
+                imu_sum.accel_y -= imu_window[imu_index].accel_y;
+                imu_sum.accel_z -= imu_window[imu_index].accel_z;
+                imu_sum.gyro_x  -= imu_window[imu_index].gyro_x;
+                imu_sum.gyro_y  -= imu_window[imu_index].gyro_y;
+                imu_sum.gyro_z  -= imu_window[imu_index].gyro_z;
+                imu_sum.temp    -= imu_window[imu_index].temp;
+
+                imu_window[imu_index] = *sample;
+
+                imu_sum.accel_x += sample->accel_x;
+                imu_sum.accel_y += sample->accel_y;
+                imu_sum.accel_z += sample->accel_z;
+                imu_sum.gyro_x  += sample->gyro_x;
+                imu_sum.gyro_y  += sample->gyro_y;
+                imu_sum.gyro_z  += sample->gyro_z;
+                imu_sum.temp    += sample->temp;
+        }
+
+        imu_index = (imu_index + 1) % IMU_WINDOW_SIZE;
+        float div = (float)imu_count;
+
+        imu_avg.accel_x = imu_sum.accel_x / div;
+        imu_avg.accel_y = imu_sum.accel_y / div;
+        imu_avg.accel_z = imu_sum.accel_z / div;
+        imu_avg.gyro_x  = imu_sum.gyro_x  / div;
+        imu_avg.gyro_y  = imu_sum.gyro_y  / div;
+        imu_avg.gyro_z  = imu_sum.gyro_z  / div;
+        imu_avg.temp    = imu_sum.temp    / div;
+}
 
 #define PWM_MAX_STEP 500  // passo máximo permitido por ciclo
 #define Kp 0.2f            // ganho proporcional (ajuste conforme necessário)
