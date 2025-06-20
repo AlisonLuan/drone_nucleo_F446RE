@@ -22,6 +22,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <string.h>
+#include "mpu6050.h"
 
 /* USER CODE END Includes */
 
@@ -58,6 +59,8 @@ volatile uint32_t PWM_D9_Target = 0;
 volatile uint32_t PWM_D6_Target = 0;
 volatile uint32_t PWM_D5_Target = 0;
 volatile uint32_t PWM_D3_Target = 0;
+
+MPU6050_Data_t imu_data;
 
 /* USER CODE END PV */
 
@@ -122,9 +125,10 @@ int main(void)
 
 	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
 	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
-	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
-	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
-	Debug_Send("System Init Complete\r\n");
+       HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
+       HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
+       Debug_Send("System Init Complete\r\n");
+       MPU6050_Init(&hi2c1);
 
 	/* USER CODE END 2 */
 
@@ -139,13 +143,15 @@ int main(void)
 		uint32_t now = HAL_GetTick();
 
 		// Toggle LED every 500 ms without blocking
-		if (now - lastBlink >= 500)
-		{
-			HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-			lastBlink = now;
-		}
+               if (now - lastBlink >= 500)
+               {
+                       HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+                       lastBlink = now;
+               }
 
-		UpdatePWM(); // This runs as fast as possible
+               MPU6050_ReadAll(&hi2c1, &imu_data);
+
+               UpdatePWM(); // This runs as fast as possible
 	}
 	/* USER CODE END 3 */
 }
