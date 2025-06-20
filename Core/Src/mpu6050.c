@@ -55,8 +55,25 @@ HAL_StatusTypeDef MPU6050_ReadAll(I2C_HandleTypeDef *hi2c, MPU6050_Data_t *data)
 	data->temp    = (int16_t)(buf[6] << 8 | buf[7]);
 	data->gyro_x  = (int16_t)(buf[8] << 8 | buf[9]);
 	data->gyro_y  = (int16_t)(buf[10] << 8 | buf[11]);
-	data->gyro_z  = (int16_t)(buf[12] << 8 | buf[13]);
+        data->gyro_z  = (int16_t)(buf[12] << 8 | buf[13]);
 
-	return HAL_OK;
+        return HAL_OK;
+}
+
+void MPU6050_ConvertToPhysical(const MPU6050_Data_t *raw, MPU6050_Physical_t *out)
+{
+        const float accel_lsb = 8192.0f;   /* LSB/g for +-4g */
+        const float gyro_lsb  = 65.5f;     /* LSB/(deg/s) for +-500dps */
+        const float g = 9.80665f;          /* m/s^2 per g */
+
+        out->accel_x = (raw->accel_x / accel_lsb) * g;
+        out->accel_y = (raw->accel_y / accel_lsb) * g;
+        out->accel_z = (raw->accel_z / accel_lsb) * g;
+
+        out->gyro_x  = raw->gyro_x / gyro_lsb;
+        out->gyro_y  = raw->gyro_y / gyro_lsb;
+        out->gyro_z  = raw->gyro_z / gyro_lsb;
+
+        out->temp = (raw->temp / 340.0f) + 36.53f;
 }
 /* USER CODE END 1 */
