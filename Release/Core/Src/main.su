@@ -1,6 +1,6 @@
-../Core/Src/main.c:80:6:Debug_Send	8	static
-../Core/Src/main.c:417:6:SoftStartPWM	4	static
-../Core/Src/main.c:435:6:UpdatePWM	24	static
-../Core/Src/main.c:453:6:Error_Handler	8	static,ignoring_inline_asm
-../Core/Src/main.c:157:6:SystemClock_Config	88	static
-../Core/Src/main.c:92:5:main	80	static
+../Core/Src/main.c:83:6:Debug_Send	8	static
+../Core/Src/main.c:423:6:SoftStartPWM	4	static
+../Core/Src/main.c:441:6:UpdatePWM	24	static
+../Core/Src/main.c:459:6:Error_Handler	8	static,ignoring_inline_asm
+../Core/Src/main.c:163:6:SystemClock_Config	88	static
+../Core/Src/main.c:95:5:main	80	static

@@ -1,6 +1,6 @@
-../Core/Src/main.c:80:6:Debug_Send	1
-../Core/Src/main.c:417:6:SoftStartPWM	5
-../Core/Src/main.c:435:6:UpdatePWM	1
-../Core/Src/main.c:453:6:Error_Handler	1
-../Core/Src/main.c:157:6:SystemClock_Config	1
-../Core/Src/main.c:92:5:main	2
+../Core/Src/main.c:83:6:Debug_Send	1
+../Core/Src/main.c:423:6:SoftStartPWM	5
+../Core/Src/main.c:441:6:UpdatePWM	1
+../Core/Src/main.c:459:6:Error_Handler	1
+../Core/Src/main.c:163:6:SystemClock_Config	1
+../Core/Src/main.c:95:5:main	2

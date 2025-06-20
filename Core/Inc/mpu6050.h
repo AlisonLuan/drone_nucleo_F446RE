@@ -12,13 +12,13 @@ extern "C" {
  * @brief Raw sensor data structure
  */
 typedef struct {
-int16_t accel_x;
-int16_t accel_y;
-int16_t accel_z;
-int16_t gyro_x;
-int16_t gyro_y;
-int16_t gyro_z;
-int16_t temp;
+	int16_t accel_x;
+	int16_t accel_y;
+	int16_t accel_z;
+	int16_t gyro_x;
+	int16_t gyro_y;
+	int16_t gyro_z;
+	int16_t temp;
 } MPU6050_Data_t;
 /* USER CODE END ET */
 
