@@ -190,7 +190,7 @@ int main(void)
 		float output_pitch = PID_KP * error_pitch;
 		float output_roll  = PID_KP * error_roll;
 
-		float throttle = control_enabled ? throttle_base : 0.0f;
+		float throttle = throttle_base;
 
 		float m1 = throttle + output_pitch + output_roll;
 		float m2 = throttle + output_pitch - output_roll;
@@ -202,10 +202,20 @@ int main(void)
 		if (m3 > MAX_PWM) m3 = MAX_PWM; else if (m3 < MIN_PWM) m3 = MIN_PWM;
 		if (m4 > MAX_PWM) m4 = MAX_PWM; else if (m4 < MIN_PWM) m4 = MIN_PWM;
 
+		if(control_enabled)
+		{
 		PWM_D9_Target = (uint32_t)m1;
 		PWM_D6_Target = (uint32_t)m2;
 		PWM_D5_Target = (uint32_t)m3;
 		PWM_D3_Target = (uint32_t)m4;
+		}
+		else
+		{
+			PWM_D9_Target = 0;
+					PWM_D6_Target = 0;
+					PWM_D5_Target = 0;
+					PWM_D3_Target = 0;
+		}
 
 		UpdatePWM(); // This runs as fast as possible
 	}
