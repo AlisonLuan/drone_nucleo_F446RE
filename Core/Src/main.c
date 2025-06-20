@@ -24,6 +24,7 @@
 #include <string.h>
 #include <math.h>
 #include "mpu6050.h"
+#include <stdio.h>
 
 /* USER CODE END Includes */
 
@@ -94,6 +95,7 @@ void UpdatePWM(void);
 void Debug_Send(const char *msg);
 void IMU_UpdateAverage(const MPU6050_Physical_t *sample);
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
+void I2C_ResetBus(void);
 
 /* USER CODE END PFP */
 
@@ -166,9 +168,16 @@ int main(void)
 			lastBlink = now;
 		}
 
-		MPU6050_ReadAll(&hi2c1, &imu_data);
-		MPU6050_ConvertToPhysical(&imu_data, &imu_phys);
-		IMU_UpdateAverage(&imu_phys);
+                if (MPU6050_ReadAll(&hi2c1, &imu_data) != HAL_OK || HAL_I2C_GetError(&hi2c1) != HAL_I2C_ERROR_NONE)
+                {
+                        char buf[40];
+                        snprintf(buf, sizeof(buf), "I2C error:%lu\r\n", HAL_I2C_GetError(&hi2c1));
+                        Debug_Send(buf);
+                        I2C_ResetBus();
+                        continue;
+                }
+                MPU6050_ConvertToPhysical(&imu_data, &imu_phys);
+                IMU_UpdateAverage(&imu_phys);
 
 		float pitch = atanf(imu_avg.accel_y /
 				sqrtf(imu_avg.accel_x * imu_avg.accel_x +
@@ -467,6 +476,31 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+void I2C_ResetBus(void)
+{
+        HAL_I2C_DeInit(&hi2c1);
+
+        GPIO_InitTypeDef GPIO_InitStruct = {0};
+        GPIO_InitStruct.Pin = GPIO_PIN_8|GPIO_PIN_9;
+        GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
+        GPIO_InitStruct.Pull = GPIO_PULLUP;
+        GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+        HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+        for (int i = 0; i < 9; i++)
+        {
+                HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_SET);
+                HAL_Delay(1);
+                HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_RESET);
+                HAL_Delay(1);
+        }
+
+        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8|GPIO_PIN_9, GPIO_PIN_SET);
+        HAL_Delay(1);
+
+        MX_I2C1_Init();
+}
 
 void IMU_UpdateAverage(const MPU6050_Physical_t *sample)
 {
