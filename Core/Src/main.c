@@ -36,7 +36,6 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define IMU_WINDOW_SIZE 10
 #define MIN_PWM        1000
 #define MAX_PWM        2000
 #define PID_KP         1.0f
@@ -70,10 +69,10 @@ volatile uint32_t PWM_D3_Target = 0;
 MPU6050_Data_t imu_data;
 MPU6050_Physical_t imu_phys;
 MPU6050_Physical_t imu_avg;
-static MPU6050_Physical_t imu_window[IMU_WINDOW_SIZE];
-static MPU6050_Physical_t imu_sum;
-static uint8_t imu_index = 0;
-static uint8_t imu_count = 0;
+MPU6050_Physical_t imu_window[IMU_WINDOW_SIZE];
+MPU6050_Physical_t imu_sum;
+uint8_t imu_index = 0;
+uint8_t imu_count = 0;
 
 volatile uint8_t control_enabled = 0;
 float target_pitch = 0.0f;
@@ -96,7 +95,6 @@ void UpdatePWM(void);
 void Debug_Send(const char *msg);
 void IMU_UpdateAverage(const MPU6050_Physical_t *sample);
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
-void I2C_ResetBus(void);
 
 /* USER CODE END PFP */
 
@@ -484,31 +482,6 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-
-void I2C_ResetBus(void)
-{
-        HAL_I2C_DeInit(&hi2c1);
-
-        GPIO_InitTypeDef GPIO_InitStruct = {0};
-        GPIO_InitStruct.Pin = GPIO_PIN_8|GPIO_PIN_9;
-        GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
-        GPIO_InitStruct.Pull = GPIO_PULLUP;
-        GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-        HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-        for (int i = 0; i < 9; i++)
-        {
-                HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_SET);
-                HAL_Delay(1);
-                HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_RESET);
-                HAL_Delay(1);
-        }
-
-        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8|GPIO_PIN_9, GPIO_PIN_SET);
-        HAL_Delay(1);
-
-        MX_I2C1_Init();
-}
 
 /* IMU_UpdateAverage moved to drone_control.c */
 
