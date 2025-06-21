@@ -208,12 +208,12 @@ int main(void)
 			if (duration >= BUTTON_LONG_PRESS_MS)
 			{
 				Debug_Send("Calibration\r\n");
-				integral_pitch = 0.0f;
-				integral_roll = 0.0f;
-				integral_yaw = 0.0f;
-				last_error_pitch = 0.0f;
-				last_error_roll = 0.0f;
-				last_error_yaw = 0.0f;
+                                pid_pitch.integral = 0.0f;
+                                pid_roll.integral  = 0.0f;
+                                pid_yaw.integral   = 0.0f;
+                                pid_pitch.last_err = 0.0f;
+                                pid_roll.last_err  = 0.0f;
+                                pid_yaw.last_err   = 0.0f;
 				control_state = CONTROL_DISARMED;
 			}
 			else if (duration >= BUTTON_DEBOUNCE_MS)
