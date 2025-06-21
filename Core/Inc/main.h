@@ -38,16 +38,26 @@ extern "C" {
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
+typedef enum {
+  CONTROL_DISARMED = 0,
+  CONTROL_ARMED,
+  CONTROL_CALIBRATE
+} ControlState;
 
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
 /* USER CODE BEGIN EC */
+#define BUTTON_DEBOUNCE_MS    50U
+#define BUTTON_LONG_PRESS_MS 2000U
 
 /* USER CODE END EC */
 
 /* Exported macro ------------------------------------------------------------*/
 /* USER CODE BEGIN EM */
+extern volatile ControlState control_state;
+extern volatile uint8_t button_pressed;
+extern uint32_t button_press_time;
 
 /* USER CODE END EM */
 

@@ -88,6 +88,9 @@ uint8_t imu_index = 0;
 uint8_t imu_count = 0;
 
 volatile uint8_t control_enabled = 0;
+volatile ControlState control_state = CONTROL_DISARMED;
+volatile uint8_t button_pressed = 0;
+uint32_t button_press_time = 0;
 float target_pitch = 0.0f;
 float target_roll  = 0.0f;
 float target_yaw   = 0.0f;
@@ -183,11 +186,42 @@ int main(void)
 		uint32_t now = HAL_GetTick();
 
 		// Toggle LED every 500 ms without blocking
-		if (now - lastBlink >= 500)
-		{
-			HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-			lastBlink = now;
-		}
+                if (now - lastBlink >= 500)
+                {
+                        HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+                        lastBlink = now;
+                }
+
+                if (button_pressed && HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin) == GPIO_PIN_SET)
+                {
+                        uint32_t duration = now - button_press_time;
+                        button_pressed = 0;
+                        if (duration >= BUTTON_LONG_PRESS_MS)
+                        {
+                                Debug_Send("Calibration\r\n");
+                                integral_pitch = 0.0f;
+                                integral_roll = 0.0f;
+                                integral_yaw = 0.0f;
+                                last_error_pitch = 0.0f;
+                                last_error_roll = 0.0f;
+                                last_error_yaw = 0.0f;
+                                control_state = CONTROL_DISARMED;
+                        }
+                        else if (duration >= BUTTON_DEBOUNCE_MS)
+                        {
+                                if (control_state == CONTROL_ARMED)
+                                {
+                                        control_state = CONTROL_DISARMED;
+                                        Debug_Send("Disarmed\r\n");
+                                }
+                                else
+                                {
+                                        control_state = CONTROL_ARMED;
+                                        Debug_Send("Armed\r\n");
+                                }
+                        }
+                }
+                control_enabled = (control_state == CONTROL_ARMED);
 
                 if (MPU6050_ReadAll(&hi2c1, &imu_data) != HAL_OK || HAL_I2C_GetError(&hi2c1) != HAL_I2C_ERROR_NONE)
                 {
