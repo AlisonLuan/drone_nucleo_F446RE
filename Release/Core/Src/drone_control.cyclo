@@ -1,8 +1,9 @@
-../Core/Src/drone_control.c:33:13:ShortDelay	3
-../Core/Src/drone_control.c:46:6:IMU_Filter	1
-../Core/Src/drone_control.c:70:6:Debug_Send	1
-../Core/Src/drone_control.c:75:6:IMU_UpdateAverage	2
-../Core/Src/drone_control.c:125:6:SoftStartPWM	5
-../Core/Src/drone_control.c:149:6:UpdatePWM	1
-../Core/Src/drone_control.c:162:6:HAL_GPIO_EXTI_Callback	3
-../Core/Src/drone_control.c:176:6:I2C_ResetBus	3
+../Core/Src/drone_control.c:42:13:ShortDelay	3
+../Core/Src/drone_control.c:55:6:IMU_Filter	1
+../Core/Src/drone_control.c:75:6:Debug_Send	1
+../Core/Src/drone_control.c:80:6:IMU_UpdateAverage	2
+../Core/Src/drone_control.c:127:7:PID_Update	1
+../Core/Src/drone_control.c:136:6:SoftStartPWM	6
+../Core/Src/drone_control.c:162:6:UpdatePWM	1
+../Core/Src/drone_control.c:175:6:HAL_GPIO_EXTI_Callback	3
+../Core/Src/drone_control.c:189:6:I2C_ResetBus	3

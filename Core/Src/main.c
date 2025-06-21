@@ -122,10 +122,10 @@ void IMU_UpdateAverage(const MPU6050_Physical_t *sample);
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
 void IMU_Filter(const MPU6050_Physical_t *in, MPU6050_Physical_t *out);
 void CalibrateIMU(I2C_HandleTypeDef *hi2c,
-                  MPU6050_Physical_t *sum,
-                  MPU6050_Physical_t window[],
-                  uint8_t *idx,
-                  uint8_t *count);
+		MPU6050_Physical_t *sum,
+		MPU6050_Physical_t window[],
+		uint8_t *idx,
+		uint8_t *count);
 float ReadBatteryVoltage(void);
 
 /* USER CODE END PFP */
@@ -174,12 +174,12 @@ int main(void)
 	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
 	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
 	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
-        Debug_Send("System Init Complete\r\n");
-        MPU6050_Init(&hi2c1);
-        Debug_Send("Calibrating IMU...\r\n");
-        CalibrateIMU(&hi2c1, &imu_sum, imu_window, &imu_index, &imu_count);
-        imu_bias = imu_avg;
-        Debug_Send("Calibration done.\r\n");
+	Debug_Send("System Init Complete\r\n");
+	MPU6050_Init(&hi2c1);
+	Debug_Send("Calibrating IMU...\r\n");
+	CalibrateIMU(&hi2c1, &imu_sum, imu_window, &imu_index, &imu_count);
+	imu_bias = imu_avg;
+	Debug_Send("Calibration done.\r\n");
 
 	/* USER CODE END 2 */
 
@@ -208,12 +208,12 @@ int main(void)
 			if (duration >= BUTTON_LONG_PRESS_MS)
 			{
 				Debug_Send("Calibration\r\n");
-                                pid_pitch.integral = 0.0f;
-                                pid_roll.integral  = 0.0f;
-                                pid_yaw.integral   = 0.0f;
-                                pid_pitch.last_err = 0.0f;
-                                pid_roll.last_err  = 0.0f;
-                                pid_yaw.last_err   = 0.0f;
+				pid_pitch.integral = 0.0f;
+				pid_roll.integral  = 0.0f;
+				pid_yaw.integral   = 0.0f;
+				pid_pitch.last_err = 0.0f;
+				pid_roll.last_err  = 0.0f;
+				pid_yaw.last_err   = 0.0f;
 				control_state = CONTROL_DISARMED;
 			}
 			else if (duration >= BUTTON_DEBOUNCE_MS)
@@ -270,38 +270,38 @@ int main(void)
 			last_pid_time = now;
 			if (dt <= 0.0f) dt = 0.001f;
 
-                        float error_pitch = target_pitch - pitch;
-                        float output_pitch = PID_Update(&pid_pitch, error_pitch, dt);
+			float error_pitch = target_pitch - pitch;
+			float output_pitch = PID_Update(&pid_pitch, error_pitch, dt);
 
-                        float error_roll  = target_roll - roll;
-                        float output_roll  = PID_Update(&pid_roll, error_roll, dt);
+			float error_roll  = target_roll - roll;
+			float output_roll  = PID_Update(&pid_roll, error_roll, dt);
 
-                        float error_yaw      = target_yaw - (imu_phys.gyro_z * dt);
-                        float output_yaw     = PID_Update(&pid_yaw, error_yaw, dt);
+			float error_yaw      = target_yaw - (imu_phys.gyro_z * dt);
+			float output_yaw     = PID_Update(&pid_yaw, error_yaw, dt);
 
-                        float throttle = throttle_base;
-                        if (throttle_override >= 0.0f)
-                        {
-                                throttle = throttle_override;
-                        }
+			float throttle = throttle_base;
+			if (throttle_override >= 0.0f)
+			{
+				throttle = throttle_override;
+			}
 
-                        float m1 = throttle + output_pitch + output_roll + output_yaw;
-                        float m2 = throttle + output_pitch - output_roll - output_yaw;
-                        float m3 = throttle - output_pitch + output_roll - output_yaw;
-                        float m4 = throttle - output_pitch - output_roll + output_yaw;
+			float m1 = throttle + output_pitch + output_roll + output_yaw;
+			float m2 = throttle + output_pitch - output_roll - output_yaw;
+			float m3 = throttle - output_pitch + output_roll - output_yaw;
+			float m4 = throttle - output_pitch - output_roll + output_yaw;
 
 			if (m1 > MAX_PWM) m1 = MAX_PWM; else if (m1 < MIN_PWM) m1 = MIN_PWM;
 			if (m2 > MAX_PWM) m2 = MAX_PWM; else if (m2 < MIN_PWM) m2 = MIN_PWM;
 			if (m3 > MAX_PWM) m3 = MAX_PWM; else if (m3 < MIN_PWM) m3 = MIN_PWM;
 			if (m4 > MAX_PWM) m4 = MAX_PWM; else if (m4 < MIN_PWM) m4 = MIN_PWM;
 
-                        if (ReadBatteryVoltage() < LOW_BATT_THRESHOLD)
-                        {
-                                control_state = CONTROL_DISARMED;
-                                Debug_Send("Low battery, disarming\r\n");
-                        }
+			if (ReadBatteryVoltage() < LOW_BATT_THRESHOLD)
+			{
+				control_state = CONTROL_DISARMED;
+				Debug_Send("Low battery, disarming\r\n");
+			}
 
-                        if(control_enabled)
+			if(control_enabled)
 			{
 				PWM_D9_Target = (uint32_t)m1;
 				PWM_D6_Target = (uint32_t)m2;
@@ -597,29 +597,29 @@ static void MX_GPIO_Init(void)
 /* HAL_GPIO_EXTI_Callback moved to drone_control.c */
 
 void CalibrateIMU(I2C_HandleTypeDef *hi2c,
-                  MPU6050_Physical_t *sum,
-                  MPU6050_Physical_t window[],
-                  uint8_t *idx,
-                  uint8_t *count)
+		MPU6050_Physical_t *sum,
+		MPU6050_Physical_t window[],
+		uint8_t *idx,
+		uint8_t *count)
 {
-  const int SAMPLES = 200;
-  memset(sum, 0, sizeof(*sum));
-  *idx = *count = 0;
-  for (int i = 0; i < SAMPLES; ++i) {
-    MPU6050_Data_t raw;
-    MPU6050_Physical_t phys;
-    while (MPU6050_ReadAll(hi2c, &raw) != HAL_OK);
-    MPU6050_ConvertToPhysical(&raw, &phys);
-    IMU_UpdateAverage(&phys);
-    HAL_Delay(5);
-  }
-  /* now imu_avg holds bias; caller may store it */
+	const int SAMPLES = 200;
+	memset(sum, 0, sizeof(*sum));
+	*idx = *count = 0;
+	for (int i = 0; i < SAMPLES; ++i) {
+		MPU6050_Data_t raw;
+		MPU6050_Physical_t phys;
+		while (MPU6050_ReadAll(hi2c, &raw) != HAL_OK);
+		MPU6050_ConvertToPhysical(&raw, &phys);
+		IMU_UpdateAverage(&phys);
+		HAL_Delay(5);
+	}
+	/* now imu_avg holds bias; caller may store it */
 }
 
 float ReadBatteryVoltage(void)
 {
-  /* ADC not configured - return nominal value */
-  return 12.0f;
+	/* ADC not configured - return nominal value */
+	return 12.0f;
 }
 
 /* USER CODE END 4 */
