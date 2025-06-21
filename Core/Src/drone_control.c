@@ -27,6 +27,15 @@ extern volatile uint8_t control_enabled;
 
 static uint32_t last_button_time = 0;
 
+/* Simple cycle-based delay used during I2C bus recovery */
+static void ShortDelay(void)
+{
+    for (volatile uint32_t i = 0; i < 1000; ++i)
+    {
+        __NOP();
+    }
+}
+
 /* Filter state for accelerometer low-pass and gyroscope high-pass */
 static MPU6050_Physical_t accel_lp = {0};
 static MPU6050_Physical_t gyro_hp = {0};
@@ -180,13 +189,13 @@ void I2C_ResetBus(void)
     for (int i = 0; i < 9; i++)
     {
         HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_SET);
-        HAL_Delay(1);
+        ShortDelay();
         HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_RESET);
-        HAL_Delay(1);
+        ShortDelay();
     }
 
     HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8|GPIO_PIN_9, GPIO_PIN_SET);
-    HAL_Delay(1);
+    ShortDelay();
 
     hi2c1.Instance = I2C1;
     hi2c1.Init.ClockSpeed = 100000;
