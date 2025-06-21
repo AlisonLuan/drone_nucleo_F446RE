@@ -68,6 +68,7 @@ volatile uint32_t PWM_D3_Target = 0;
 
 MPU6050_Data_t imu_data;
 MPU6050_Physical_t imu_phys;
+MPU6050_Physical_t imu_filt;
 MPU6050_Physical_t imu_avg;
 MPU6050_Physical_t imu_window[IMU_WINDOW_SIZE];
 MPU6050_Physical_t imu_sum;
@@ -95,6 +96,7 @@ void UpdatePWM(void);
 void Debug_Send(const char *msg);
 void IMU_UpdateAverage(const MPU6050_Physical_t *sample);
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
+void IMU_Filter(const MPU6050_Physical_t *in, MPU6050_Physical_t *out);
 
 /* USER CODE END PFP */
 
@@ -173,7 +175,8 @@ int main(void)
                         continue;
                 }
                 MPU6050_ConvertToPhysical(&imu_data, &imu_phys);
-                IMU_UpdateAverage(&imu_phys);
+                IMU_Filter(&imu_phys, &imu_filt);
+                IMU_UpdateAverage(&imu_filt);
 
 		float pitch = atanf(imu_avg.accel_y /
 				sqrtf(imu_avg.accel_x * imu_avg.accel_x +
