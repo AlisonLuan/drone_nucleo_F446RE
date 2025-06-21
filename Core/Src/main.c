@@ -91,6 +91,7 @@ float target_pitch = 0.0f;
 float target_roll  = 0.0f;
 float target_yaw   = 0.0f;
 float throttle_base = BASE_THROTTLE;
+volatile float debug_throttle = -1.0f; /* Allows throttle override via debugger */
 
 float last_error_pitch = 0.0f;
 float integral_pitch   = 0.0f;
@@ -191,6 +192,11 @@ int main(void)
                         char buf[40];
                         snprintf(buf, sizeof(buf), "I2C error:%lu\r\n", HAL_I2C_GetError(&hi2c1));
                         Debug_Send(buf);
+                        PWM_D9_Target = 0;
+                        PWM_D6_Target = 0;
+                        PWM_D5_Target = 0;
+                        PWM_D3_Target = 0;
+                        UpdatePWM();
                         I2C_ResetBus();
                         continue;
                 }
@@ -223,7 +229,11 @@ int main(void)
                                    PID_KI_ROLL * integral_roll +
                                    PID_KD_ROLL * derivative_roll;
 
-		float throttle = throttle_base;
+                float throttle = throttle_base;
+                if (debug_throttle >= 0.0f)
+                {
+                        throttle = debug_throttle;
+                }
 
 		float m1 = throttle + output_pitch + output_roll;
 		float m2 = throttle + output_pitch - output_roll;
