@@ -52,6 +52,7 @@
 
 #define BASE_THROTTLE  1200.0f
 #define MAX_I2C_RETRIES 3
+#define LOW_BATT_THRESHOLD 3.5f
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -82,6 +83,7 @@ MPU6050_Data_t imu_data;
 MPU6050_Physical_t imu_phys;
 MPU6050_Physical_t imu_filt;
 MPU6050_Physical_t imu_avg;
+MPU6050_Physical_t imu_bias;
 MPU6050_Physical_t imu_window[IMU_WINDOW_SIZE];
 MPU6050_Physical_t imu_sum;
 uint8_t imu_index = 0;
@@ -95,14 +97,10 @@ float target_pitch = 0.0f;
 float target_roll  = 0.0f;
 float target_yaw   = 0.0f;
 float throttle_base = BASE_THROTTLE;
-volatile float debug_throttle = -1.0f; /* Allows throttle override via debugger */
-
-float last_error_pitch = 0.0f;
-float integral_pitch   = 0.0f;
-float last_error_roll  = 0.0f;
-float integral_roll    = 0.0f;
-float last_error_yaw   = 0.0f;
-float integral_yaw     = 0.0f;
+volatile float throttle_override = -1.0f; /* Allows throttle override via debugger */
+PID_t pid_pitch = { PID_KP_PITCH, PID_KI_PITCH, PID_KD_PITCH, 0.0f, 0.0f };
+PID_t pid_roll  = { PID_KP_ROLL,  PID_KI_ROLL,  PID_KD_ROLL,  0.0f, 0.0f };
+PID_t pid_yaw   = { PID_KP_YAW,   PID_KI_YAW,   PID_KD_YAW,   0.0f, 0.0f };
 uint32_t last_pid_time = 0;
 uint8_t i2c_retry_count = 0;
 uint32_t last_update = 0;
@@ -123,6 +121,12 @@ void Debug_Send(const char *msg);
 void IMU_UpdateAverage(const MPU6050_Physical_t *sample);
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
 void IMU_Filter(const MPU6050_Physical_t *in, MPU6050_Physical_t *out);
+void CalibrateIMU(I2C_HandleTypeDef *hi2c,
+                  MPU6050_Physical_t *sum,
+                  MPU6050_Physical_t window[],
+                  uint8_t *idx,
+                  uint8_t *count);
+float ReadBatteryVoltage(void);
 
 /* USER CODE END PFP */
 
@@ -170,8 +174,12 @@ int main(void)
 	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
 	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
 	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
-	Debug_Send("System Init Complete\r\n");
-	MPU6050_Init(&hi2c1);
+        Debug_Send("System Init Complete\r\n");
+        MPU6050_Init(&hi2c1);
+        Debug_Send("Calibrating IMU...\r\n");
+        CalibrateIMU(&hi2c1, &imu_sum, imu_window, &imu_index, &imu_count);
+        imu_bias = imu_avg;
+        Debug_Send("Calibration done.\r\n");
 
 	/* USER CODE END 2 */
 
@@ -262,39 +270,38 @@ int main(void)
 			last_pid_time = now;
 			if (dt <= 0.0f) dt = 0.001f;
 
-			float error_pitch = target_pitch - pitch;
-			integral_pitch += error_pitch * dt;
-			float derivative_pitch = (error_pitch - last_error_pitch) / dt;
-			last_error_pitch = error_pitch;
-			float output_pitch = PID_KP_PITCH * error_pitch +
-					PID_KI_PITCH * integral_pitch +
-					PID_KD_PITCH * derivative_pitch;
+                        float error_pitch = target_pitch - pitch;
+                        float output_pitch = PID_Update(&pid_pitch, error_pitch, dt);
 
-			float error_roll  = target_roll - roll;
-			integral_roll += error_roll * dt;
-			float derivative_roll = (error_roll - last_error_roll) / dt;
-			last_error_roll = error_roll;
-			float output_roll  = PID_KP_ROLL * error_roll +
-					PID_KI_ROLL * integral_roll +
-					PID_KD_ROLL * derivative_roll;
+                        float error_roll  = target_roll - roll;
+                        float output_roll  = PID_Update(&pid_roll, error_roll, dt);
 
-			float throttle = throttle_base;
-			if (debug_throttle >= 0.0f)
-			{
-				throttle = debug_throttle;
-			}
+                        float error_yaw      = target_yaw - (imu_phys.gyro_z * dt);
+                        float output_yaw     = PID_Update(&pid_yaw, error_yaw, dt);
 
-			float m1 = throttle + output_pitch + output_roll;
-			float m2 = throttle + output_pitch - output_roll;
-			float m3 = throttle - output_pitch + output_roll;
-			float m4 = throttle - output_pitch - output_roll;
+                        float throttle = throttle_base;
+                        if (throttle_override >= 0.0f)
+                        {
+                                throttle = throttle_override;
+                        }
+
+                        float m1 = throttle + output_pitch + output_roll + output_yaw;
+                        float m2 = throttle + output_pitch - output_roll - output_yaw;
+                        float m3 = throttle - output_pitch + output_roll - output_yaw;
+                        float m4 = throttle - output_pitch - output_roll + output_yaw;
 
 			if (m1 > MAX_PWM) m1 = MAX_PWM; else if (m1 < MIN_PWM) m1 = MIN_PWM;
 			if (m2 > MAX_PWM) m2 = MAX_PWM; else if (m2 < MIN_PWM) m2 = MIN_PWM;
 			if (m3 > MAX_PWM) m3 = MAX_PWM; else if (m3 < MIN_PWM) m3 = MIN_PWM;
 			if (m4 > MAX_PWM) m4 = MAX_PWM; else if (m4 < MIN_PWM) m4 = MIN_PWM;
 
-			if(control_enabled)
+                        if (ReadBatteryVoltage() < LOW_BATT_THRESHOLD)
+                        {
+                                control_state = CONTROL_DISARMED;
+                                Debug_Send("Low battery, disarming\r\n");
+                        }
+
+                        if(control_enabled)
 			{
 				PWM_D9_Target = (uint32_t)m1;
 				PWM_D6_Target = (uint32_t)m2;
@@ -582,15 +589,38 @@ static void MX_GPIO_Init(void)
 
 /* IMU_UpdateAverage moved to drone_control.c */
 
-#define PWM_MAX_STEP 1  // passo máximo permitido por ciclo
-#define Kp 0.2f            // ganho proporcional (ajuste conforme necessário)
-
 /* SoftStartPWM moved to drone_control.c */
 
 
 /* UpdatePWM moved to drone_control.c */
 
 /* HAL_GPIO_EXTI_Callback moved to drone_control.c */
+
+void CalibrateIMU(I2C_HandleTypeDef *hi2c,
+                  MPU6050_Physical_t *sum,
+                  MPU6050_Physical_t window[],
+                  uint8_t *idx,
+                  uint8_t *count)
+{
+  const int SAMPLES = 200;
+  memset(sum, 0, sizeof(*sum));
+  *idx = *count = 0;
+  for (int i = 0; i < SAMPLES; ++i) {
+    MPU6050_Data_t raw;
+    MPU6050_Physical_t phys;
+    while (MPU6050_ReadAll(hi2c, &raw) != HAL_OK);
+    MPU6050_ConvertToPhysical(&raw, &phys);
+    IMU_UpdateAverage(&phys);
+    HAL_Delay(5);
+  }
+  /* now imu_avg holds bias; caller may store it */
+}
+
+float ReadBatteryVoltage(void)
+{
+  /* ADC not configured - return nominal value */
+  return 12.0f;
+}
 
 /* USER CODE END 4 */
 

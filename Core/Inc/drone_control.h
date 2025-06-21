@@ -5,6 +5,16 @@
 
 #define IMU_WINDOW_SIZE 10
 
+typedef struct {
+    float kp;
+    float ki;
+    float kd;
+    float last_err;
+    float integral;
+} PID_t;
+
+float PID_Update(PID_t *pid, float error, float dt);
+
 
 void Debug_Send(const char *msg);
 void SoftStartPWM(uint32_t *current, const uint32_t target);
