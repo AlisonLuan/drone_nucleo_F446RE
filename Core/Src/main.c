@@ -311,8 +311,8 @@ int main(void)
 
 			UpdatePWM(); // Runs every 10 ms with control loop
 		}
-		/* USER CODE END 3 */
 	}
+	/* USER CODE END 3 */
 }
 
 /**
