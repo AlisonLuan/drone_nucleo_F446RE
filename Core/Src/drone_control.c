@@ -24,6 +24,8 @@ extern uint8_t imu_index;
 extern uint8_t imu_count;
 
 extern volatile uint8_t control_enabled;
+extern volatile uint8_t button_pressed;
+extern uint32_t button_press_time;
 
 static uint32_t last_button_time = 0;
 
@@ -162,14 +164,10 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
     if (GPIO_Pin == B1_Pin)
     {
         uint32_t now = HAL_GetTick();
-        if (now - last_button_time > 200)
+        if (now - last_button_time > BUTTON_DEBOUNCE_MS)
         {
-            control_enabled = !control_enabled;
-            if (control_enabled)
-                Debug_Send("Control Enabled\r\n");
-            else
-                Debug_Send("Control Disabled\r\n");
-
+            button_pressed = 1;
+            button_press_time = now;
             last_button_time = now;
         }
     }
