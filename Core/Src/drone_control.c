@@ -84,7 +84,15 @@ void IMU_UpdateAverage(const MPU6050_Physical_t *sample)
 
 void SoftStartPWM(uint32_t *current, const uint32_t target)
 {
-    int32_t error = (int32_t)target - (int32_t)(*current);
+    uint32_t desired = target;
+
+    /* Optional branch to ramp down smoothly when control is disabled */
+    if (!control_enabled)
+    {
+        desired = 0;
+    }
+
+    int32_t error = (int32_t)desired - (int32_t)(*current);
     int32_t step = (int32_t)(Kp * error);
 
     if (step > PWM_MAX_STEP) step = PWM_MAX_STEP;
@@ -92,9 +100,9 @@ void SoftStartPWM(uint32_t *current, const uint32_t target)
 
     *current += step;
 
-    if ((step > 0 && *current > target) || (step < 0 && *current < target))
+    if ((step > 0 && *current > desired) || (step < 0 && *current < desired))
     {
-        *current = target;
+        *current = desired;
     }
 }
 
