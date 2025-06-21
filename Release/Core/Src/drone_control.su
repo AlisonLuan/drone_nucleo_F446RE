@@ -1,0 +1,8 @@
+../Core/Src/drone_control.c:33:13:ShortDelay	8	static,ignoring_inline_asm
+../Core/Src/drone_control.c:46:6:IMU_Filter	12	static
+../Core/Src/drone_control.c:70:6:Debug_Send	8	static
+../Core/Src/drone_control.c:75:6:IMU_UpdateAverage	12	static
+../Core/Src/drone_control.c:125:6:SoftStartPWM	0	static
+../Core/Src/drone_control.c:149:6:UpdatePWM	24	static
+../Core/Src/drone_control.c:162:6:HAL_GPIO_EXTI_Callback	8	static
+../Core/Src/drone_control.c:176:6:I2C_ResetBus	48	static

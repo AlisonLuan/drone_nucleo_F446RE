@@ -65,29 +65,29 @@ HAL_StatusTypeDef MPU6050_ReadAll(I2C_HandleTypeDef *hi2c, MPU6050_Data_t *data)
 
 void MPU6050_ConvertToPhysical(const MPU6050_Data_t *raw, MPU6050_Physical_t *out)
 {
-        const float accel_lsb = 8192.0f;   /* LSB/g for +-4g */
-        const float gyro_lsb  = 65.5f;     /* LSB/(deg/s) for +-500dps */
-        const float g = 9.80665f;          /* m/s^2 per g */
+	const float accel_lsb = 8192.0f;   /* LSB/g for +-4g */
+	const float gyro_lsb  = 65.5f;     /* LSB/(deg/s) for +-500dps */
+	const float g = 9.80665f;          /* m/s^2 per g */
 
-        static MPU6050_Data_t prev = {0};
-        MPU6050_Data_t clean = *raw;
+	static MPU6050_Data_t prev = {0};
+	MPU6050_Data_t clean = *raw;
 
-        if (abs((int32_t)raw->accel_x - prev.accel_x) > ACCEL_SPIKE_THRESH) clean.accel_x = prev.accel_x; else prev.accel_x = raw->accel_x;
-        if (abs((int32_t)raw->accel_y - prev.accel_y) > ACCEL_SPIKE_THRESH) clean.accel_y = prev.accel_y; else prev.accel_y = raw->accel_y;
-        if (abs((int32_t)raw->accel_z - prev.accel_z) > ACCEL_SPIKE_THRESH) clean.accel_z = prev.accel_z; else prev.accel_z = raw->accel_z;
+	if (abs((int32_t)raw->accel_x - prev.accel_x) > ACCEL_SPIKE_THRESH) clean.accel_x = prev.accel_x; else prev.accel_x = raw->accel_x;
+	if (abs((int32_t)raw->accel_y - prev.accel_y) > ACCEL_SPIKE_THRESH) clean.accel_y = prev.accel_y; else prev.accel_y = raw->accel_y;
+	if (abs((int32_t)raw->accel_z - prev.accel_z) > ACCEL_SPIKE_THRESH) clean.accel_z = prev.accel_z; else prev.accel_z = raw->accel_z;
 
-        if (abs((int32_t)raw->gyro_x - prev.gyro_x) > GYRO_SPIKE_THRESH) clean.gyro_x = prev.gyro_x; else prev.gyro_x = raw->gyro_x;
-        if (abs((int32_t)raw->gyro_y - prev.gyro_y) > GYRO_SPIKE_THRESH) clean.gyro_y = prev.gyro_y; else prev.gyro_y = raw->gyro_y;
-        if (abs((int32_t)raw->gyro_z - prev.gyro_z) > GYRO_SPIKE_THRESH) clean.gyro_z = prev.gyro_z; else prev.gyro_z = raw->gyro_z;
+	if (abs((int32_t)raw->gyro_x - prev.gyro_x) > GYRO_SPIKE_THRESH) clean.gyro_x = prev.gyro_x; else prev.gyro_x = raw->gyro_x;
+	if (abs((int32_t)raw->gyro_y - prev.gyro_y) > GYRO_SPIKE_THRESH) clean.gyro_y = prev.gyro_y; else prev.gyro_y = raw->gyro_y;
+	if (abs((int32_t)raw->gyro_z - prev.gyro_z) > GYRO_SPIKE_THRESH) clean.gyro_z = prev.gyro_z; else prev.gyro_z = raw->gyro_z;
 
-        out->accel_x = (clean.accel_x / accel_lsb) * g;
-        out->accel_y = (clean.accel_y / accel_lsb) * g;
-        out->accel_z = (clean.accel_z / accel_lsb) * g;
+	out->accel_x = (clean.accel_x / accel_lsb) * g;
+	out->accel_y = (clean.accel_y / accel_lsb) * g;
+	out->accel_z = (clean.accel_z / accel_lsb) * g;
 
-        out->gyro_x  = clean.gyro_x / gyro_lsb;
-        out->gyro_y  = clean.gyro_y / gyro_lsb;
-        out->gyro_z  = clean.gyro_z / gyro_lsb;
+	out->gyro_x  = clean.gyro_x / gyro_lsb;
+	out->gyro_y  = clean.gyro_y / gyro_lsb;
+	out->gyro_z  = clean.gyro_z / gyro_lsb;
 
-        out->temp = (clean.temp / 340.0f) + 36.53f;
+	out->temp = (clean.temp / 340.0f) + 36.53f;
 }
 /* USER CODE END 1 */
