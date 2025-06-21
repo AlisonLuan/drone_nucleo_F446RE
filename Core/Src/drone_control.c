@@ -27,6 +27,35 @@ extern volatile uint8_t control_enabled;
 
 static uint32_t last_button_time = 0;
 
+/* Filter state for accelerometer low-pass and gyroscope high-pass */
+static MPU6050_Physical_t accel_lp = {0};
+static MPU6050_Physical_t gyro_hp = {0};
+static MPU6050_Physical_t gyro_prev_in = {0};
+
+void IMU_Filter(const MPU6050_Physical_t *in, MPU6050_Physical_t *out)
+{
+    const float alpha_acc = 0.2f;  /* low-pass smoothing factor */
+    const float alpha_gyro = 0.8f; /* high-pass coefficient */
+
+    out->accel_x = alpha_acc * in->accel_x + (1.0f - alpha_acc) * accel_lp.accel_x;
+    out->accel_y = alpha_acc * in->accel_y + (1.0f - alpha_acc) * accel_lp.accel_y;
+    out->accel_z = alpha_acc * in->accel_z + (1.0f - alpha_acc) * accel_lp.accel_z;
+    accel_lp = *out;
+
+    out->gyro_x = alpha_gyro * (gyro_hp.gyro_x + in->gyro_x - gyro_prev_in.gyro_x);
+    out->gyro_y = alpha_gyro * (gyro_hp.gyro_y + in->gyro_y - gyro_prev_in.gyro_y);
+    out->gyro_z = alpha_gyro * (gyro_hp.gyro_z + in->gyro_z - gyro_prev_in.gyro_z);
+
+    gyro_prev_in.gyro_x = in->gyro_x;
+    gyro_prev_in.gyro_y = in->gyro_y;
+    gyro_prev_in.gyro_z = in->gyro_z;
+    gyro_hp.gyro_x = out->gyro_x;
+    gyro_hp.gyro_y = out->gyro_y;
+    gyro_hp.gyro_z = out->gyro_z;
+
+    out->temp = in->temp;
+}
+
 void Debug_Send(const char *msg)
 {
     HAL_UART_Transmit(&huart2, (uint8_t *)msg, strlen(msg), HAL_MAX_DELAY);

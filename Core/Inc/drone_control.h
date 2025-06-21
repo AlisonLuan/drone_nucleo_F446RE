@@ -10,6 +10,7 @@ void Debug_Send(const char *msg);
 void SoftStartPWM(uint32_t *current, const uint32_t target);
 void UpdatePWM(void);
 void IMU_UpdateAverage(const MPU6050_Physical_t *sample);
+void IMU_Filter(const MPU6050_Physical_t *in, MPU6050_Physical_t *out);
 void I2C_ResetBus(void);
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
 
