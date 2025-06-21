@@ -105,6 +105,7 @@ float last_error_yaw   = 0.0f;
 float integral_yaw     = 0.0f;
 uint32_t last_pid_time = 0;
 uint8_t i2c_retry_count = 0;
+uint32_t last_update = 0;
 
 /* USER CODE END PV */
 
@@ -223,30 +224,34 @@ int main(void)
                 }
                 control_enabled = (control_state == CONTROL_ARMED);
 
-                if (MPU6050_ReadAll(&hi2c1, &imu_data) != HAL_OK || HAL_I2C_GetError(&hi2c1) != HAL_I2C_ERROR_NONE)
+                if (now - last_update >= 10)
                 {
-                        char buf[40];
-                        snprintf(buf, sizeof(buf), "I2C error:%lu\r\n", HAL_I2C_GetError(&hi2c1));
-                        Debug_Send(buf);
-                        PWM_D9_Target = 0;
-                        PWM_D6_Target = 0;
-                        PWM_D5_Target = 0;
-                        PWM_D3_Target = 0;
-                        UpdatePWM();
-                        I2C_ResetBus();
-                        if (++i2c_retry_count > MAX_I2C_RETRIES)
+                        last_update = now;
+
+                        if (MPU6050_ReadAll(&hi2c1, &imu_data) != HAL_OK || HAL_I2C_GetError(&hi2c1) != HAL_I2C_ERROR_NONE)
                         {
-                                Error_Handler();
+                                char buf[40];
+                                snprintf(buf, sizeof(buf), "I2C error:%lu\r\n", HAL_I2C_GetError(&hi2c1));
+                                Debug_Send(buf);
+                                PWM_D9_Target = 0;
+                                PWM_D6_Target = 0;
+                                PWM_D5_Target = 0;
+                                PWM_D3_Target = 0;
+                                UpdatePWM();
+                                I2C_ResetBus();
+                                if (++i2c_retry_count > MAX_I2C_RETRIES)
+                                {
+                                        Error_Handler();
+                                }
+                                continue;
                         }
-                        continue;
-                }
-                else
-                {
-                        i2c_retry_count = 0;
-                }
-                MPU6050_ConvertToPhysical(&imu_data, &imu_phys);
-                IMU_Filter(&imu_phys, &imu_filt);
-                IMU_UpdateAverage(&imu_filt);
+                        else
+                        {
+                                i2c_retry_count = 0;
+                        }
+                        MPU6050_ConvertToPhysical(&imu_data, &imu_phys);
+                        IMU_Filter(&imu_phys, &imu_filt);
+                        IMU_UpdateAverage(&imu_filt);
 
                 float pitch = atanf(imu_avg.accel_y /
                                 sqrtf(imu_avg.accel_x * imu_avg.accel_x +
@@ -304,8 +309,8 @@ int main(void)
 					PWM_D3_Target = 0;
 		}
 
-		UpdatePWM(); // This runs as fast as possible
-	}
+                UpdatePWM(); // Runs every 10 ms with control loop
+        }
   /* USER CODE END 3 */
 }
 
