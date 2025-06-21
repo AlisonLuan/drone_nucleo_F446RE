@@ -51,6 +51,7 @@
 #define PID_KD_YAW     0.01f
 
 #define BASE_THROTTLE  1200.0f
+#define MAX_I2C_RETRIES 3
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -100,6 +101,7 @@ float integral_roll    = 0.0f;
 float last_error_yaw   = 0.0f;
 float integral_yaw     = 0.0f;
 uint32_t last_pid_time = 0;
+uint8_t i2c_retry_count = 0;
 
 /* USER CODE END PV */
 
@@ -198,7 +200,15 @@ int main(void)
                         PWM_D3_Target = 0;
                         UpdatePWM();
                         I2C_ResetBus();
+                        if (++i2c_retry_count > MAX_I2C_RETRIES)
+                        {
+                                Error_Handler();
+                        }
                         continue;
+                }
+                else
+                {
+                        i2c_retry_count = 0;
                 }
                 MPU6050_ConvertToPhysical(&imu_data, &imu_phys);
                 IMU_Filter(&imu_phys, &imu_filt);
