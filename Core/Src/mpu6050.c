@@ -2,6 +2,7 @@
 
 /* USER CODE BEGIN 0 */
 #include <stdlib.h>
+#include <stdbool.h>
 #define MPU6050_ADDR            (0x68 << 1)
 #define MPU6050_REG_PWR_MGMT_1  0x6B
 #define MPU6050_REG_SMPLRT_DIV  0x19
@@ -14,14 +15,21 @@
 /* USER CODE END 0 */
 
 /* USER CODE BEGIN 1 */
+#define WHO_AM_I_REG  0x75
+#define WHO_AM_I_VAL  0x68
 HAL_StatusTypeDef MPU6050_Init(I2C_HandleTypeDef *hi2c)
 {
 	uint8_t data;
 
-	/* Wake up the sensor */
-	data = 0;
-	if (HAL_I2C_Mem_Write(hi2c, MPU6050_ADDR, MPU6050_REG_PWR_MGMT_1, 1, &data, 1, HAL_MAX_DELAY) != HAL_OK)
-		return HAL_ERROR;
+        /* Wake up the sensor */
+        data = 0;
+        if (HAL_I2C_Mem_Write(hi2c, MPU6050_ADDR, MPU6050_REG_PWR_MGMT_1, 1, &data, 1, HAL_MAX_DELAY) != HAL_OK)
+                return HAL_ERROR;
+
+        /* confirm MPU6050 identity */
+        uint8_t who = 0;
+        if (HAL_I2C_Mem_Read(hi2c, MPU6050_ADDR, WHO_AM_I_REG, 1, &who, 1, HAL_MAX_DELAY) != HAL_OK || who != WHO_AM_I_VAL)
+                return HAL_ERROR;
 
 	/* Set sample rate to 1kHz/(1+0) = 1kHz */
 	data = 0;
@@ -69,8 +77,13 @@ void MPU6050_ConvertToPhysical(const MPU6050_Data_t *raw, MPU6050_Physical_t *ou
 	const float gyro_lsb  = 65.5f;     /* LSB/(deg/s) for +-500dps */
 	const float g = 9.80665f;          /* m/s^2 per g */
 
-	static MPU6050_Data_t prev = {0};
-	MPU6050_Data_t clean = *raw;
+        static MPU6050_Data_t prev = {0};
+        static bool first_call = true;
+        if (first_call) {
+                prev = *raw;
+                first_call = false;
+        }
+        MPU6050_Data_t clean = *raw;
 
 	if (abs((int32_t)raw->accel_x - prev.accel_x) > ACCEL_SPIKE_THRESH) clean.accel_x = prev.accel_x; else prev.accel_x = raw->accel_x;
 	if (abs((int32_t)raw->accel_y - prev.accel_y) > ACCEL_SPIKE_THRESH) clean.accel_y = prev.accel_y; else prev.accel_y = raw->accel_y;
