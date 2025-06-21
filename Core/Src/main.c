@@ -38,7 +38,18 @@
 /* USER CODE BEGIN PD */
 #define MIN_PWM        1000
 #define MAX_PWM        2000
-#define PID_KP         1.0f
+#define PID_KP_PITCH   0.7f
+#define PID_KI_PITCH   0.02f
+#define PID_KD_PITCH   0.01f
+
+#define PID_KP_ROLL    0.7f
+#define PID_KI_ROLL    0.02f
+#define PID_KD_ROLL    0.01f
+
+#define PID_KP_YAW     0.7f
+#define PID_KI_YAW     0.02f
+#define PID_KD_YAW     0.01f
+
 #define BASE_THROTTLE  1200.0f
 /* USER CODE END PD */
 
@@ -80,6 +91,14 @@ float target_pitch = 0.0f;
 float target_roll  = 0.0f;
 float target_yaw   = 0.0f;
 float throttle_base = BASE_THROTTLE;
+
+float last_error_pitch = 0.0f;
+float integral_pitch   = 0.0f;
+float last_error_roll  = 0.0f;
+float integral_roll    = 0.0f;
+float last_error_yaw   = 0.0f;
+float integral_yaw     = 0.0f;
+uint32_t last_pid_time = 0;
 
 /* USER CODE END PV */
 
@@ -151,8 +170,9 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-	uint32_t lastBlink = 0;
-	while (1)
+        uint32_t lastBlink = 0;
+        last_pid_time = HAL_GetTick();
+        while (1)
 	{
     /* USER CODE END WHILE */
 
@@ -178,16 +198,30 @@ int main(void)
                 IMU_Filter(&imu_phys, &imu_filt);
                 IMU_UpdateAverage(&imu_filt);
 
-		float pitch = atanf(imu_avg.accel_y /
-				sqrtf(imu_avg.accel_x * imu_avg.accel_x +
-						imu_avg.accel_z * imu_avg.accel_z)) * 180.0f / M_PI;
-		float roll  = atanf(-imu_avg.accel_x / imu_avg.accel_z) * 180.0f / M_PI;
+                float pitch = atanf(imu_avg.accel_y /
+                                sqrtf(imu_avg.accel_x * imu_avg.accel_x +
+                                                imu_avg.accel_z * imu_avg.accel_z)) * 180.0f / M_PI;
+                float roll  = atanf(-imu_avg.accel_x / imu_avg.accel_z) * 180.0f / M_PI;
 
-		float error_pitch = target_pitch - pitch;
-		float error_roll  = target_roll - roll;
+                float dt = (now - last_pid_time) / 1000.0f;
+                last_pid_time = now;
+                if (dt <= 0.0f) dt = 0.001f;
 
-		float output_pitch = PID_KP * error_pitch;
-		float output_roll  = PID_KP * error_roll;
+                float error_pitch = target_pitch - pitch;
+                integral_pitch += error_pitch * dt;
+                float derivative_pitch = (error_pitch - last_error_pitch) / dt;
+                last_error_pitch = error_pitch;
+                float output_pitch = PID_KP_PITCH * error_pitch +
+                                    PID_KI_PITCH * integral_pitch +
+                                    PID_KD_PITCH * derivative_pitch;
+
+                float error_roll  = target_roll - roll;
+                integral_roll += error_roll * dt;
+                float derivative_roll = (error_roll - last_error_roll) / dt;
+                last_error_roll = error_roll;
+                float output_roll  = PID_KP_ROLL * error_roll +
+                                   PID_KI_ROLL * integral_roll +
+                                   PID_KD_ROLL * derivative_roll;
 
 		float throttle = throttle_base;
 
